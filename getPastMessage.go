@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-	api := slack.New("token")
+	api := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 
 	today := time.Now()
 	yesterday := today.AddDate(-1, 0, 0)
@@ -47,7 +48,7 @@ func main() {
 	}
 
 	for _, channel := range channels {
-		if channel.Name == "general" {
+		if channel.Name == "daily-logs-bravo" {
 			fmt.Println(channel.ID)
 			history, err := api.GetChannelHistory(channel.ID, historyParameters)
 
@@ -56,8 +57,17 @@ func main() {
 				return
 			}
 
-			fmt.Println(history)
-
+			fmt.Println("HISTORY LATEST")
+			fmt.Println(history.Latest)
+			fmt.Println("--------------------------------------------------------------------------------------")
+			fmt.Println("HISTORY HASMORE")
+			fmt.Println(history.HasMore)
+			fmt.Println("--------------------------------------------------------------------------------------")
+			fmt.Println("HISTORY MESSAGE")
+			for idx, message := range history.Messages {
+				fmt.Println(idx, message)
+				fmt.Println("--------------------------------------------------------------------------------------")
+			}
 		}
 	}
 }
