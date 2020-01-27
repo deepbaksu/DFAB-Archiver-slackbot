@@ -1,3 +1,10 @@
+.idea/
+env/
+*.txt
+
+# set token in os environment variable
+set_token.sh
+
 # Created by https://www.gitignore.io/api/go
 # Edit at https://www.gitignore.io/?templates=go
 
