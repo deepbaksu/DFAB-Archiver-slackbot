@@ -83,7 +83,7 @@ func serializeMessage(m slack.Message) []interface{} {
 	ts, _ := strconv.ParseFloat(m.Timestamp, 64)
 	tm := time.Unix(int64(ts), int64((ts-float64(int64(ts)))*1000))
 
-	return []interface{}{tm.Format(time.UnixDate), m.User, m.Text}
+	return []interface{}{tm.Format(time.RFC3339), m.User, m.Text}
 }
 
 // Serializes to [][]interface{} so it can be sent over the network.
