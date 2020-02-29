@@ -8,7 +8,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
+	"github.com/dl4ab/DFAB-Archiver-slackbot/slackutil"
+	"github.com/slack-go/slack"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -18,7 +22,7 @@ var TargetSheetId = "1jlQE7BQUYdImdn5sB8e1fohpPtMiOWKlH2euITlvZR8"
 func GetOauthConfig(path string) *oauth2.Config {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
+		log.Fatalf("Unable to read client secret file: %v (Try getting a credentials.json from https://developers.google.com/sheets/api/quickstart/go)", err)
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
@@ -82,4 +86,26 @@ func SaveToken(path string, token *oauth2.Token) {
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
+}
+
+// Serialize one message to []interface{}
+func serializeMessage(m slack.Message) []interface{} {
+	log.Printf("Serializing %v", m)
+	ts, _ := strconv.ParseFloat(m.Timestamp, 64)
+	tm := time.Unix(int64(ts), int64((ts-float64(int64(ts)))*1000))
+
+	return []interface{}{tm.Format(time.RFC3339), m.User, m.Text}
+}
+
+// Serializes to [][]interface{} so it can be sent over the network.
+func Serialize(buf []slack.Message) [][]interface{} {
+	var temp [][]interface{}
+
+	for _, m := range buf {
+		if slackutil.IsInterestedMessage(m) {
+			temp = append(temp, serializeMessage(m))
+		}
+	}
+
+	return temp
 }

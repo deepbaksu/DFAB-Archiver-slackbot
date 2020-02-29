@@ -4,12 +4,11 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/dl4ab/DFAB-Archiver-slackbot/sheetsutil"
 	"github.com/dl4ab/DFAB-Archiver-slackbot/slackutil"
-	slack "github.com/slack-go/slack"
+	"github.com/slack-go/slack"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -53,12 +52,16 @@ func main() {
 
 	var buf []slack.Message
 	for _, channel := range channels {
+
+		// Currently, only interested in this channel.
 		if channel.Name == "daily_english" {
 			buf = slackutil.ReadMessages(api, channel.ID, historyParameters)
+			break
 		}
 	}
 
-	// Get credentials.json from https://developers.google.com/sheets/api/quickstart/js
+	// Try to build a Google sheets API.
+	// TODO(kkweon): Refactor into sheetsutil.
 	config := sheetsutil.GetOauthConfig("credentials.json")
 	client := sheetsutil.GetClient(config)
 	srv, err := sheets.New(client)
@@ -67,7 +70,7 @@ func main() {
 	}
 
 	valuerrange := &sheets.ValueRange{
-		Values: serialize(buf),
+		Values: sheetsutil.Serialize(buf),
 	}
 
 	// Get the top most table and append to the bottom.
@@ -75,31 +78,4 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error while appending values to the spreadsheet: %v", err)
 	}
-}
-
-// Serialize one message to []interface{}
-func serializeMessage(m slack.Message) []interface{} {
-	log.Printf("Serializing %v", m)
-	ts, _ := strconv.ParseFloat(m.Timestamp, 64)
-	tm := time.Unix(int64(ts), int64((ts-float64(int64(ts)))*1000))
-
-	return []interface{}{tm.Format(time.RFC3339), m.User, m.Text}
-}
-
-// Serializes to [][]interface{} so it can be sent over the network.
-func serialize(buf []slack.Message) [][]interface{} {
-	var temp [][]interface{}
-
-	for _, m := range buf {
-		if isInterestedMessage(m) {
-			temp = append(temp, serializeMessage(m))
-		}
-	}
-
-	return temp
-}
-
-// Returns true if it's the top most message.
-func isInterestedMessage(m slack.Message) bool {
-	return m.ParentUserId == "" && m.SubType == ""
 }

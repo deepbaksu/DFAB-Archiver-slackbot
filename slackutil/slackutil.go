@@ -43,3 +43,8 @@ func ReadMessages(api *slack.Client, channelId string, historyParams *slack.Hist
 
 	return buf
 }
+
+// Returns true if it's the top most message.
+func IsInterestedMessage(m slack.Message) bool {
+	return m.ParentUserId == "" && m.SubType == ""
+}
