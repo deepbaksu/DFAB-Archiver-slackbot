@@ -29,3 +29,4 @@ set_token.sh
 # End of https://www.gitignore.io/api/go
 credentials.json
 token.json
+DFAB-Archiver-slackbot
