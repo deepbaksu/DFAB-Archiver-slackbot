@@ -33,6 +33,10 @@ var endTimestamp time.Time
 func main() {
 	flag.Parse()
 
+	if *slackToken == "" {
+		log.Fatal("-token is not provided.")
+	}
+
 	beginTimestamp = time.Unix(*beginUnixEpoch, 0)
 	endTimestamp = time.Unix(*endUnixEpoch, 0)
 
@@ -54,7 +58,8 @@ func main() {
 		}
 	}
 
-	// Get credentials.json from https://developers.google.com/sheets/api/quickstart/js config := sheetsutil.GetOauthConfig("credentials.json")
+	// Get credentials.json from https://developers.google.com/sheets/api/quickstart/js
+	config := sheetsutil.GetOauthConfig("credentials.json")
 	client := sheetsutil.GetClient(config)
 	srv, err := sheets.New(client)
 	if err != nil {
