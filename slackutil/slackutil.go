@@ -27,7 +27,11 @@ func ReadMessages(api *slack.Client, channelId string, historyParams *slack.Hist
 	var buf []slack.Message
 
 	for idx, message := range history.Messages {
-		buf = append(buf, message)
+
+		// Collect messages at the top level (not replies).
+		if IsInterestedMessage(message) {
+			buf = append(buf, message)
+		}
 
 		if history.HasMore && idx == len(history.Messages)-1 && historyParams.Latest > message.Timestamp {
 			// Subtract 0.5 second to avoid fetching the same message.

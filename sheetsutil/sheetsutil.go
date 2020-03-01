@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dl4ab/DFAB-Archiver-slackbot/slackutil"
 	"github.com/slack-go/slack"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -102,9 +101,7 @@ func Serialize(buf []slack.Message) [][]interface{} {
 	var temp [][]interface{}
 
 	for _, m := range buf {
-		if slackutil.IsInterestedMessage(m) {
-			temp = append(temp, serializeMessage(m))
-		}
+		temp = append(temp, serializeMessage(m))
 	}
 
 	return temp
