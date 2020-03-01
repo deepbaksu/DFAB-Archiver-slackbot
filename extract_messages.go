@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/dl4ab/DFAB-Archiver-slackbot/sheetsutil"
 	"github.com/dl4ab/DFAB-Archiver-slackbot/slackutil"
 	"github.com/slack-go/slack"
+	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -54,7 +56,7 @@ func main() {
 	// TODO(kkweon): Refactor into sheetsutil.
 	config := sheetsutil.GetOauthConfig("credentials.json")
 	client := sheetsutil.GetClient(config)
-	srv, err := sheets.New(client)
+	srv, err := sheets.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}

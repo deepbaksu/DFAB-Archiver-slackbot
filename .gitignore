@@ -30,3 +30,4 @@ set_token.sh
 credentials.json
 token.json
 DFAB-Archiver-slackbot
+coverage.txt
