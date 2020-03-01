@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -16,15 +15,6 @@ var slackToken = flag.String("token", "", "Slack Bot Token")
 
 var beginUnixEpoch = flag.Int64("begin", time.Now().AddDate(0, 0, -1).Unix(), "The begin date for searching messages.")
 var endUnixEpoch = flag.Int64("end", time.Now().Unix(), "The ending timestamp for searching messages.")
-
-func ioutilMustTempFile() string {
-	f, err := ioutil.TempFile("", "output.*.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	return f.Name()
-}
 
 var beginTimestamp time.Time
 var endTimestamp time.Time
