@@ -14,6 +14,7 @@ import (
 )
 
 var slackToken = flag.String("token", "", "Slack Bot Token")
+var sheetsApiKey = flag.String("gsheet-api", "", "Google Sheets API Key")
 
 var beginUnixEpoch = flag.Int64("begin", time.Now().AddDate(0, 0, -1).Unix(), "The begin date for searching messages.")
 var endUnixEpoch = flag.Int64("end", time.Now().Unix(), "The ending timestamp for searching messages.")
@@ -54,9 +55,7 @@ func main() {
 
 	// Try to build a Google sheets API.
 	// TODO(kkweon): Refactor into sheetsutil.
-	config := sheetsutil.GetOauthConfig("credentials.json")
-	client := sheetsutil.GetClient(config)
-	srv, err := sheets.NewService(context.Background(), option.WithHTTPClient(client))
+	srv, err := sheets.NewService(context.Background(), option.WithAPIKey(*sheetsApiKey))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
