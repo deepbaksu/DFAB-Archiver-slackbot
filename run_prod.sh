@@ -10,6 +10,7 @@ SHEET_ID="${SHEET_ID:?}"
 CHANNELS="daily_english,general"
 
 DOCKER_IMAGE=kkweon/dfab-archiver:latest
+docker pull ${DOCKER_IMAGE}
 docker run --rm --env BEGIN_TIMESTAMP=${BEGIN_TIMESTAMP:?} \
 --env END_TIMESTAMP=${END_TIMESTAMP:?} \
 --env SLACK_TOKEN=${SLACK_TOKEN:?} \
