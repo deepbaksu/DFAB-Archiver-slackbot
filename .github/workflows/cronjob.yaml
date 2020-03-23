@@ -17,12 +17,16 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Prepare credentials.json
+      env:
+        PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        echo ${{ secrets.credentials_json }} > credentials.json
+        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE credentials.json.gpg
 
     - name: Prepare token.json
+      env:
+        PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        echo ${{ secrets.token_json  }} > token.json
+        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE token.json.gpg
 
     - name: Run the docker script
       env:
