@@ -36,5 +36,8 @@ jobs:
 
     - name: Commit last_timestamp.txt
       run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'kkweon@gmail.com'
+
         git commit -am 'Update last_timestamp.txt'
         git push
