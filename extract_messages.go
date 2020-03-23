@@ -104,6 +104,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if len(channels) == 0 {
+		log.Printf("The number of channels returned from the server is 0. Please check the SLACK API key. Subscribed channels are %v",
+			ChannelsValue{interestedChannels})
+	}
+
 	var buf []slack.Message
 	for _, channel := range channels {
 
@@ -117,6 +122,10 @@ func main() {
 			if *dryRun {
 				log.Println(buf)
 				continue
+			}
+
+			if len(buf) == 0 {
+				log.Printf("There is no message returned in this channel(%v).", channel.Name)
 			}
 
 			wg.Add(1)

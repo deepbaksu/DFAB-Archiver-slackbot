@@ -11,6 +11,11 @@ CHANNELS="daily_english,general"
 
 DOCKER_IMAGE=kkweon/dfab-archiver:latest
 docker pull ${DOCKER_IMAGE}
+
+# if the image is already running, remove the image.
+# copied from https://stackoverflow.com/questions/34228864/stop-and-delete-docker-container-if-its-running.
+docker stop runner || true && docker rm runner || true
+
 docker run --env BEGIN_TIMESTAMP=${BEGIN_TIMESTAMP:?} \
 --name runner \
 --env END_TIMESTAMP=${END_TIMESTAMP:?} \
