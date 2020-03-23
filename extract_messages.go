@@ -31,7 +31,7 @@ type ChannelsValue struct {
 var interestedChannels = map[string]bool{}
 
 func (s ChannelsValue) Set(value string) error {
-	words := strings.Split(value, " ")
+	words := strings.Split(value, ",")
 
 	for _, word := range words {
 		channel := strings.Trim(word, " ")
@@ -56,7 +56,6 @@ var wg sync.WaitGroup
 
 func main() {
 	defer wg.Wait()
-
 	// Parse channels
 	flag.Var(&ChannelsValue{interestedChannels}, "channels", `The names of channels to fetch (e.g., "daily_english,general")`)
 
@@ -107,25 +106,30 @@ func main() {
 	for _, channel := range channels {
 
 		// Currently, only interested in this channel.
-		if _, ok := interestedChannels[channel.Name]; ok {
+		log.Printf("Checking %v with %v", channel.Name, interestedChannels)
+		ok := interestedChannels[channel.Name]
+		log.Printf("ok=%v", ok)
+		if ok {
 			buf = slackutil.ReadMessages(api, channel.ID, historyParameters)
+			log.Printf("Found messages")
 			wg.Add(1)
 			go writeMessagesToSheets(buf, channel, srv, existingSheetSet)
 		}
 	}
+
 }
 
 func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, sheetsService *sheets.Service, existingSheetNames map[string]bool) {
 	defer wg.Done()
-
-	if _, ok := existingSheetNames[channel.Name]; !ok {
+	sheetName := channel.Name
+	if _, ok := existingSheetNames[sheetName]; !ok {
 
 		req := &sheets.BatchUpdateSpreadsheetRequest{
 			Requests: []*sheets.Request{
 				&sheets.Request{
 					AddSheet: &sheets.AddSheetRequest{
 						Properties: &sheets.SheetProperties{
-							Title: channel.Name,
+							Title: sheetName,
 						},
 					},
 				},
@@ -145,7 +149,7 @@ func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, shee
 		for _, header := range []string{"Timestamp", "UserID", "Content"} {
 			headers = append(headers, header)
 		}
-		_, err = sheetsService.Spreadsheets.Values.Append(*sheetId, channel.Name+"!A1", &sheets.ValueRange{
+		_, err = sheetsService.Spreadsheets.Values.Append(*sheetId, sheetName+"!A1", &sheets.ValueRange{
 			Values: [][]interface{}{headers},
 		}).ValueInputOption("RAW").Do()
 		if err != nil {
@@ -158,7 +162,7 @@ func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, shee
 	}
 
 	// Get the top most table and append to the bottom.
-	_, err := sheetsService.Spreadsheets.Values.Append(*sheetId, channel.Name+"!A1", valuerrange).ValueInputOption("RAW").Do()
+	_, err := sheetsService.Spreadsheets.Values.Append(*sheetId, sheetName+"!A1", valuerrange).ValueInputOption("RAW").Do()
 	if err != nil {
 		log.Fatalf("Error while appending values to the spreadsheet: %v", err)
 	}
