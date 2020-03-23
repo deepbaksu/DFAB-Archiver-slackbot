@@ -1,0 +1,36 @@
+name: Fetch slack messages and push.
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+
+    - name: Prepare credentials.json
+      run: |
+        echo ${credentials_json:?} > credentials.json
+
+    - name: Prepare token.json
+      run: |
+        echo ${token_json} > token.json
+
+    # Required environment variables
+    # - SLACK_TOKEN
+    # - SHEET_ID
+    - name: Run the docker script
+      run: sh run_prod.sh
+
+    - name: Commit last_timestamp.txt
+      run: |
+        git commit -am 'Update last_timestamp.txt'
+        git push

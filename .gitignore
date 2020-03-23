@@ -31,3 +31,4 @@ credentials.json
 token.json
 DFAB-Archiver-slackbot
 coverage.txt
+env.sh
