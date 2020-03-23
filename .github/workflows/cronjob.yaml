@@ -2,7 +2,8 @@ name: Fetch slack messages and push.
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
+    # every 30minutes.
+    - cron: "*/30 * * * *"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -13,31 +14,31 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
 
-    - name: Prepare credentials.json
-      env:
-        PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-      run: |
-        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output credentials.json credentials.json.gpg
+      - name: Prepare credentials.json
+        env:
+          PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output credentials.json credentials.json.gpg
 
-    - name: Prepare token.json
-      env:
-        PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-      run: |
-        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output token.json token.json.gpg
+      - name: Prepare token.json
+        env:
+          PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output token.json token.json.gpg
 
-    - name: Run the docker script
-      env:
-        SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-        SHEET_ID: ${{ secrets.SHEET_ID }}
-      run: sh run_prod.sh
+      - name: Run the docker script
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+        run: sh run_prod.sh
 
-    - name: Commit last_timestamp.txt
-      run: |
-        git config --global user.name 'GitHub Action'
-        git config --global user.email 'kkweon@gmail.com'
+      - name: Commit last_timestamp.txt
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'kkweon@gmail.com'
 
-        git commit -am 'Update last_timestamp.txt'
-        git push
+          git commit -am 'Update last_timestamp.txt'
+          git push
