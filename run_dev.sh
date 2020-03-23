@@ -7,7 +7,7 @@ END_TIMESTAMP=$(date +%s)
 SLACK_TOKEN="${SLACK_TOKEN:?}"
 SHEET_ID="${SHEET_ID:?}"
 
-CHANNELS="daily_english,general"
+CHANNELS="daily_english,general,test-channel-for-bots"
 
 go run extract_messages.go \
   -token ${SLACK_TOKEN:?} \
