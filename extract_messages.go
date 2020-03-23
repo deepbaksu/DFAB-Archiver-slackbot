@@ -21,6 +21,8 @@ var sheetId = flag.String("sheet-id", sheetsutil.TargetSheetId, "Target Sheet ID
 var beginUnixEpoch = flag.Int64("begin", time.Now().AddDate(0, 0, -1).Unix(), "The begin date for searching messages.")
 var endUnixEpoch = flag.Int64("end", time.Now().Unix(), "The ending timestamp for searching messages.")
 
+var dryRun = flag.Bool("dry-run", false, "Dry run if true.")
+
 var beginTimestamp time.Time
 var endTimestamp time.Time
 
@@ -111,7 +113,12 @@ func main() {
 		log.Printf("ok=%v", ok)
 		if ok {
 			buf = slackutil.ReadMessages(api, channel.ID, historyParameters)
-			log.Printf("Found messages")
+
+			if *dryRun {
+				log.Println(buf)
+				continue
+			}
+
 			wg.Add(1)
 			go writeMessagesToSheets(buf, channel, srv, existingSheetSet)
 		}

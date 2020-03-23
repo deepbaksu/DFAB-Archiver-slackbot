@@ -14,7 +14,8 @@ go run extract_messages.go \
   -begin ${BEGIN_TIMESTAMP:?} \
   -end ${END_TIMESTAMP:?} \
   -sheet-id ${SHEET_ID:?} \
-  -channels ${CHANNELS:?}
+  -channels ${CHANNELS:?} \
+  -dry-run
 
 if [ $? -eq 0 ]; then
   echo ${END_TIMESTAMP} > ${TIMESTAMP_FILE}
