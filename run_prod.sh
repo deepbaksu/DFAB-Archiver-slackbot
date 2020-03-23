@@ -11,7 +11,8 @@ CHANNELS="daily_english,general"
 
 DOCKER_IMAGE=kkweon/dfab-archiver:latest
 docker pull ${DOCKER_IMAGE}
-docker run --rm --env BEGIN_TIMESTAMP=${BEGIN_TIMESTAMP:?} \
+docker run --env BEGIN_TIMESTAMP=${BEGIN_TIMESTAMP:?} \
+--name runner \
 --env END_TIMESTAMP=${END_TIMESTAMP:?} \
 --env SLACK_TOKEN=${SLACK_TOKEN:?} \
 --env SHEET_ID=${SHEET_ID:?} \
@@ -20,6 +21,6 @@ docker run --rm --env BEGIN_TIMESTAMP=${BEGIN_TIMESTAMP:?} \
 -v $PWD/credentials.json:/app/credentials.json \
 ${DOCKER_IMAGE}
 
-if [ $? -eq 0 ]; then
+if [ "$(docker inspect runner --format='{{ .State.ExitCode }}')" -eq 0 ]; then
   echo ${END_TIMESTAMP} > ${TIMESTAMP_FILE}
 fi
