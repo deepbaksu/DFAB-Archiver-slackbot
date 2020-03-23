@@ -20,13 +20,13 @@ jobs:
       env:
         PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE credentials.json.gpg
+        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output credentials.json credentials.json.gpg
 
     - name: Prepare token.json
       env:
         PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       run: |
-        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE token.json.gpg
+        gpg --quiet --batch --yes --decrypt --passphrase=$PASSPHRASE --output token.json token.json.gpg
 
     - name: Run the docker script
       env:
