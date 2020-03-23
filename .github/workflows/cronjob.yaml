@@ -1,4 +1,4 @@
-name: CronJob
+name: Fetch slack messages and push.
 
 on:
   schedule:
