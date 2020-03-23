@@ -24,15 +24,10 @@ jobs:
       run: |
         echo ${{ secrets.token_json  }} > token.json
 
-    # Required environment variables
-    # - SLACK_TOKEN
-    # - SHEET_ID
-    - name: Prepare environment variables
-      run: |
-        export SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}
-        export SHEET_ID=${{ secrets.SHEET_ID }}
-
     - name: Run the docker script
+      env:
+        SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
       run: sh run_prod.sh
 
     - name: Commit last_timestamp.txt
