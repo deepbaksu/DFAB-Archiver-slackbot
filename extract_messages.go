@@ -152,8 +152,10 @@ type ElasticSearchAction struct {
 }
 
 type ChannelMessages struct {
-	Channel string         `json:"channel"`
-	Message *slack.Message `json:"message"`
+	Channel  string         `json:"channel"`
+	// unix epoch
+	Datetime string          `json:"datetime"`
+	Message  *slack.Message `json:"message"`
 }
 
 func printMessageToStdoutAsNdJson(channelName string, buf []slack.Message) {
@@ -171,11 +173,16 @@ func printMessageToStdoutAsNdJson(channelName string, buf []slack.Message) {
 			log.Fatalf("Failed to write indexKey(%v). See %v", indexKey, err)
 		}
 
-		channelMsg := ChannelMessages{channelName, &msg}
+		channelMsg := ChannelMessages{channelName, toUnixSeconds(&msg),&msg}
 		if err := encoder.Encode(channelMsg); err != nil {
 			log.Fatalf("Failed to write msg(%v). See %v", channelMsg, err)
 		}
 	}
+}
+
+// not safe.
+func toUnixSeconds(m *slack.Message) string {
+	return strings.Split(m.Timestamp, ".")[0]
 }
 
 func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, sheetsService *sheets.Service, existingSheetNames map[string]bool) {

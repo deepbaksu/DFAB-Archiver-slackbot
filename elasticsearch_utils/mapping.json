@@ -523,6 +523,10 @@
             }
           }
         }
+      },
+      "datetime": {
+        "type": "date",
+        "format": "epoch_second"
       }
     }
   }
