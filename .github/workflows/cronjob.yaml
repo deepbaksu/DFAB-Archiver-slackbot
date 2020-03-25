@@ -1,9 +1,9 @@
 name: Fetch slack messages and push.
 
 on:
-  #schedule:
-    ## every hour.
-    #- cron: "0 * * * *"
+  schedule:
+    # every hour.
+    - cron: "0 * * * *"
 
   repository_dispatch:
     types: manual-trigger
@@ -39,7 +39,7 @@ jobs:
           LB_IP: ${{ secrets.LB_IP }}
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
           ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
-        run: make run_prod put_data
+        run: sh run_prod.sh
 
       - name: Commit last_timestamp.txt
         run: |
