@@ -1,4 +1,4 @@
-.PHONY: help run_dev run_prod clean put_mapping put_data drop_index
+.PHONY: help run_dev run_prod clean put_mapping put_data drop_index trigger_github
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -27,3 +27,10 @@ drop_index:
 	@echo "dropping index"
 	@curl -u ${ES_USERNAME}:${ES_PASSWORD} -XDELETE ${LB_IP}/elastic/slack
 	@echo "done dropping index"
+
+trigger_github:
+	curl -H "Accept: application/vnd.github.everest-preview+json" \
+    -H "Authorization: token ${GITHUB_API_KEY}" \
+    --request POST \
+    --data '{"event_type": "menual-trigger"}' \
+    https://api.github.com/repos/dl4ab/DFAB-Archiver-slackbot/dispatches
