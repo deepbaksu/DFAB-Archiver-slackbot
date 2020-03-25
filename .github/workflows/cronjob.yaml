@@ -2,8 +2,8 @@ name: Fetch slack messages and push.
 
 on:
   schedule:
-    # every 30minutes.
-    - cron: "*/30 * * * *"
+    # every hour.
+    - cron: "0 * * * *"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
