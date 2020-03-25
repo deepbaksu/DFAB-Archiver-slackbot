@@ -34,3 +34,4 @@ coverage.txt
 env.sh
 temp.log
 .env
+*.log

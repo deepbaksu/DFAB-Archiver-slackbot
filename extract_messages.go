@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -119,6 +122,8 @@ func main() {
 		if ok {
 			buf = slackutil.ReadMessages(api, channel.ID, historyParameters)
 
+			printMessageToStdoutAsNdJson(channel.Name, buf)
+
 			if *dryRun {
 				log.Println(buf)
 				continue
@@ -130,9 +135,47 @@ func main() {
 
 			wg.Add(1)
 			go writeMessagesToSheets(buf, channel, srv, existingSheetSet)
+
 		}
 	}
+}
 
+type ElasticSearchActionIndex struct {
+	Id    string `json:"_id,omitempty"`
+	Index string `json:"_index,omitempty"`
+}
+
+type ElasticSearchAction struct {
+	Index  *ElasticSearchActionIndex `json:"index,omitempty"`
+	Create *ElasticSearchActionIndex `json:"create,omitempty"`
+	Delete *ElasticSearchActionIndex `json:"delete,omitempty"`
+}
+
+type ChannelMessages struct {
+	Channel string         `json:"channel"`
+	Message *slack.Message `json:"message"`
+}
+
+func printMessageToStdoutAsNdJson(channelName string, buf []slack.Message) {
+	encoder := json.NewEncoder(os.Stdout)
+	indexKey := ElasticSearchAction{
+		Index: &ElasticSearchActionIndex{
+			Index: "slack",
+		},
+	}
+
+	for _, msg := range buf {
+		// Ts is the unique key
+		indexKey.Index.Id = fmt.Sprintf("%v-%v", channelName, msg.Timestamp)
+		if err := encoder.Encode(indexKey); err != nil {
+			log.Fatalf("Failed to write indexKey(%v). See %v", indexKey, err)
+		}
+
+		channelMsg := ChannelMessages{channelName, &msg}
+		if err := encoder.Encode(channelMsg); err != nil {
+			log.Fatalf("Failed to write msg(%v). See %v", channelMsg, err)
+		}
+	}
 }
 
 func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, sheetsService *sheets.Service, existingSheetNames map[string]bool) {

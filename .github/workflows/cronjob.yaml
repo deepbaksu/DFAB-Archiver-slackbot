@@ -33,6 +33,9 @@ jobs:
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
           SHEET_ID: ${{ secrets.SHEET_ID }}
+          LB_IP: ${{ secrets.LB_IP }}
+          ES_USERNAME: ${{ secrets.ES_USERNAME }}
+          ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
         run: sh run_prod.sh
 
       - name: Commit last_timestamp.txt

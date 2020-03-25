@@ -16,4 +16,6 @@ ENV END_TIMESTAMP ''
 ENV SHEET_ID ''
 ENV CHANNELS ''
 
-CMD ./DFAB-Archiver-slackbot -token ${SLACK_TOKEN:?} -begin ${BEGIN_TIMESTAMP} -end ${END_TIMESTAMP:?} -sheet-id ${SHEET_ID:?} -channels ${CHANNELS:?}
+ADD scripts/runner.sh /app/runner.sh
+
+CMD sh ./runner.sh
