@@ -32,5 +32,5 @@ trigger_github:
 	curl -H "Accept: application/vnd.github.everest-preview+json" \
     -H "Authorization: token ${GITHUB_API_KEY}" \
     --request POST \
-    --data '{"event_type": "menual-trigger"}' \
+    --data '{"event_type": "manual-trigger"}' \
     https://api.github.com/repos/dl4ab/DFAB-Archiver-slackbot/dispatches
