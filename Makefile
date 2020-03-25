@@ -15,17 +15,17 @@ clean:
 
 put_mapping:
 	@echo "putting a new mapping"
-	@curl -u ${ES_USERNAME}:${ES_PASSWORD} -XPUT ${LB_IP}/elastic/slack -H 'Content-Type: application/x-ndjson' --data-binary '@elasticsearch_utils/mapping.json'
+	@curl -u ${ES_USERNAME}:${ES_PASSWORD} --http1.1 -XPUT https://k8s.kkweon.dev/elastic/slack -H 'Content-Type: application/x-ndjson' --data-binary '@elasticsearch_utils/mapping.json'
 	@echo "done puttng a new mapping"
 
 put_data:
 	@echo "putting data"
-	@curl -u ${ES_USERNAME}:${ES_PASSWORD} -XPUT ${LB_IP}/elastic/slack/_bulk -H 'Content-Type: application/x-ndjson' --data-binary '@temp.log'
+	@curl -u ${ES_USERNAME}:${ES_PASSWORD} --http1.1 -XPUT https://k8s.kkweon.dev/elastic/slack/_bulk -H 'Content-Type: application/x-ndjson' --data-binary '@temp.log'
 	@echo "done putting data"
 
 drop_index:
 	@echo "dropping index"
-	@curl -u ${ES_USERNAME}:${ES_PASSWORD} -XDELETE ${LB_IP}/elastic/slack
+	@curl -u ${ES_USERNAME}:${ES_PASSWORD} -XDELETE https://k8s.kkweon.dev/elastic/slack
 	@echo "done dropping index"
 
 trigger_github:
