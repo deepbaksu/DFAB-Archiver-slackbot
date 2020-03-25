@@ -1,20 +1,14 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/dl4ab/DFAB-Archiver-slackbot/sheetsutil"
 	"github.com/dl4ab/DFAB-Archiver-slackbot/slackutil"
 	"github.com/slack-go/slack"
-	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -29,32 +23,7 @@ var dryRun = flag.Bool("dry-run", false, "Dry run if true.")
 var beginTimestamp time.Time
 var endTimestamp time.Time
 
-type ChannelsValue struct {
-	channels map[string]bool
-}
-
 var interestedChannels = map[string]bool{}
-
-func (s ChannelsValue) Set(value string) error {
-	words := strings.Split(value, ",")
-
-	for _, word := range words {
-		channel := strings.Trim(word, " ")
-		s.channels[channel] = true
-	}
-
-	return nil
-}
-
-func (s ChannelsValue) String() string {
-	var channels []string
-	for channel, ok := range s.channels {
-		if ok {
-			channels = append(channels, channel)
-		}
-	}
-	return strings.Join(channels, ",")
-}
 
 // Used to fetch multiple channels concurrently.
 var wg sync.WaitGroup
@@ -62,7 +31,8 @@ var wg sync.WaitGroup
 func main() {
 	defer wg.Wait()
 	// Parse channels
-	flag.Var(&ChannelsValue{interestedChannels}, "channels", `The names of channels to fetch (e.g., "daily_english,general")`)
+	flag.Var(&slackutil.ChannelsValue{Channels: interestedChannels},
+		"channels", `The names of channels to fetch (e.g., "daily_english,general")`)
 
 	flag.Parse()
 
@@ -70,28 +40,18 @@ func main() {
 		log.Fatal("-token is not provided.")
 	}
 
-	log.Printf("Interested channels: %v", ChannelsValue{interestedChannels})
+	log.Printf("Interested channels: %v",
+		slackutil.ChannelsValue{Channels: interestedChannels})
 
 	// Try to build a Google sheets API.
-	// TODO(kkweon): Refactor into sheetsutil.
-	config := sheetsutil.GetOauthConfig("credentials.json")
-	client := sheetsutil.GetClient(config)
-	srv, err := sheets.NewService(context.Background(), option.WithHTTPClient(client))
+	srv, err := sheetsutil.GetService("credentials.json")
 
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
 
-	sheetResponse, err := srv.Spreadsheets.Get(*sheetId).Fields("sheets.properties.title").Do()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	existingSheetSet := map[string]bool{}
-	for _, sheet := range sheetResponse.Sheets {
-		title := sheet.Properties.Title
-		existingSheetSet[title] = true
-	}
+	// Get existing sheet names to decide whether to create a new sheet later.
+	sheetNamesSet := sheetsutil.GetSheetNamesSet(srv, *sheetId)
 
 	beginTimestamp = time.Unix(*beginUnixEpoch, 0)
 	endTimestamp = time.Unix(*endUnixEpoch, 0)
@@ -109,7 +69,7 @@ func main() {
 
 	if len(channels) == 0 {
 		log.Printf("The number of channels returned from the server is 0. Please check the SLACK API key. Subscribed channels are %v",
-			ChannelsValue{interestedChannels})
+			slackutil.ChannelsValue{Channels: interestedChannels})
 	}
 
 	var buf []slack.Message
@@ -122,7 +82,8 @@ func main() {
 		if ok {
 			buf = slackutil.ReadMessages(api, channel.ID, historyParameters)
 
-			printMessageToStdoutAsNdJson(channel.Name, buf)
+			// These messages will be stored in temp.log and then it will be sent to elasticsearch.
+			slackutil.PrintMessagesToStdoutAsNdjson(channel.Name, buf)
 
 			if *dryRun {
 				log.Println(buf)
@@ -133,103 +94,28 @@ func main() {
 				log.Printf("There is no message returned in this channel(%v).", channel.Name)
 			}
 
+			// This will send messages to the spreadsheets.
 			wg.Add(1)
-			go writeMessagesToSheets(buf, channel, srv, existingSheetSet)
+			go writeMessagesToSheets(buf, channel, *sheetId, srv, sheetNamesSet)
 
 		}
 	}
 }
 
-type ElasticSearchActionIndex struct {
-	Id    string `json:"_id,omitempty"`
-	Index string `json:"_index,omitempty"`
-}
-
-type ElasticSearchAction struct {
-	Index  *ElasticSearchActionIndex `json:"index,omitempty"`
-	Create *ElasticSearchActionIndex `json:"create,omitempty"`
-	Delete *ElasticSearchActionIndex `json:"delete,omitempty"`
-}
-
-type ChannelMessages struct {
-	Channel  string         `json:"channel"`
-	// unix epoch
-	Datetime string          `json:"datetime"`
-	Message  *slack.Message `json:"message"`
-}
-
-func printMessageToStdoutAsNdJson(channelName string, buf []slack.Message) {
-	encoder := json.NewEncoder(os.Stdout)
-	indexKey := ElasticSearchAction{
-		Index: &ElasticSearchActionIndex{
-			Index: "slack",
-		},
-	}
-
-	for _, msg := range buf {
-		// Ts is the unique key
-		indexKey.Index.Id = fmt.Sprintf("%v-%v", channelName, msg.Timestamp)
-		if err := encoder.Encode(indexKey); err != nil {
-			log.Fatalf("Failed to write indexKey(%v). See %v", indexKey, err)
-		}
-
-		channelMsg := ChannelMessages{channelName, toUnixSeconds(&msg),&msg}
-		if err := encoder.Encode(channelMsg); err != nil {
-			log.Fatalf("Failed to write msg(%v). See %v", channelMsg, err)
-		}
-	}
-}
-
-// not safe.
-func toUnixSeconds(m *slack.Message) string {
-	return strings.Split(m.Timestamp, ".")[0]
-}
-
-func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, sheetsService *sheets.Service, existingSheetNames map[string]bool) {
+func writeMessagesToSheets(messages []slack.Message, channel slack.Channel, sheetId string, sheetsService *sheets.Service, existingSheetNames map[string]bool) {
 	defer wg.Done()
 	sheetName := channel.Name
 	if _, ok := existingSheetNames[sheetName]; !ok {
-
-		req := &sheets.BatchUpdateSpreadsheetRequest{
-			Requests: []*sheets.Request{
-				&sheets.Request{
-					AddSheet: &sheets.AddSheetRequest{
-						Properties: &sheets.SheetProperties{
-							Title: sheetName,
-						},
-					},
-				},
-			},
-		}
-
-		// Create a new sheet.
-		_, err := sheetsService.Spreadsheets.BatchUpdate(*sheetId, req).Context(context.Background()).Do()
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Create a new header row.
-		var headers []interface{}
-
-		for _, header := range []string{"Timestamp", "UserID", "Content"} {
-			headers = append(headers, header)
-		}
-		_, err = sheetsService.Spreadsheets.Values.Append(*sheetId, sheetName+"!A1", &sheets.ValueRange{
-			Values: [][]interface{}{headers},
-		}).ValueInputOption("RAW").Do()
-		if err != nil {
-			log.Fatal(err)
-		}
+		sheetsutil.CreateNewSheet(sheetId, sheetName, sheetsService)
 	}
 
-	valuerrange := &sheets.ValueRange{
+	data := &sheets.ValueRange{
 		Values: sheetsutil.Serialize(messages),
 	}
 
 	// Get the top most table and append to the bottom.
-	_, err := sheetsService.Spreadsheets.Values.Append(*sheetId, sheetName+"!A1", valuerrange).ValueInputOption("RAW").Do()
+	_, err := sheetsService.Spreadsheets.Values.Append(sheetId, sheetName+"!A1", data).ValueInputOption("RAW").Do()
 	if err != nil {
-		log.Fatalf("Error while appending values to the spreadsheet: %v", err)
+		log.Fatalf("Failed to append data into the sheet. See error %v", err)
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/api/option"
+	"google.golang.org/api/sheets/v4"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -107,4 +109,75 @@ func Serialize(buf []slack.Message) [][]interface{} {
 	}
 
 	return temp
+}
+
+// Get Spreadsheet API Service.
+func GetService(credentialsJsonPath string) (*sheets.Service, error) {
+	config := GetOauthConfig(credentialsJsonPath)
+	client := GetClient(config)
+	srv, err := sheets.NewService(context.Background(), option.WithHTTPClient(client))
+	return srv, err
+}
+
+// Get all sheet names given the sheet id.
+func GetSheetNamesSet(srv *sheets.Service, sheetId string) map[string]bool {
+	sheetResponse, err := srv.Spreadsheets.Get(sheetId).Fields("sheets.properties.title").Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	existingSheetSet := map[string]bool{}
+	for _, sheet := range sheetResponse.Sheets {
+		title := sheet.Properties.Title
+		existingSheetSet[title] = true
+	}
+	return existingSheetSet
+}
+
+// Create a new sheet named sheetName in the sheetId sheet.
+func CreateNewSheet(sheetId, sheetName string, sheetsService *sheets.Service) {
+	req := &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{
+			&sheets.Request{
+				AddSheet: &sheets.AddSheetRequest{
+					Properties: &sheets.SheetProperties{
+						Title: sheetName,
+					},
+				},
+			},
+		},
+	}
+
+	// Create a new sheet.
+	_, err := sheetsService.Spreadsheets.BatchUpdate(sheetId, req).Context(context.Background()).Do()
+
+	if err != nil {
+		log.Fatalf("Failed to create a new shset. See the error: %v", err)
+	}
+
+	err = CreateHeaderRowInSheet(sheetsService, sheetName, sheetId)
+
+	if err != nil {
+		log.Fatalf("Failed to create the header row. See the error: %v", err)
+	}
+}
+
+// Create a header row in the sheet.
+func CreateHeaderRowInSheet(sheetsService *sheets.Service, sheetName, sheetId string) error {
+	headers := GetHeaderRow()
+	_, err := sheetsService.Spreadsheets.Values.Append(sheetId, sheetName+"!A1", &sheets.ValueRange{
+		Values: [][]interface{}{headers},
+	}).ValueInputOption("RAW").Do()
+	return err
+}
+
+// Create a Header Row data to be added to the sheet. Note that it should return []interface{}.
+func GetHeaderRow() []interface{} {
+	// Create a new header row.
+	var headers []interface{}
+
+	for _, header := range []string{"Timestamp", "UserID", "Content"} {
+		headers = append(headers, header)
+	}
+	return headers
 }
