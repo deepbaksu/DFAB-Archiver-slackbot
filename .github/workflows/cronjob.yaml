@@ -1,10 +1,6 @@
 name: Fetch slack messages and push.
 
 on:
-  schedule:
-    # every hour.
-    - cron: "0 * * * *"
-
   repository_dispatch:
     types: manual-trigger
 
